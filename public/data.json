@@ -1,14 +1,19 @@
 {
   "room_info": {
-    "roomId": "1-1-101",
-    "displayName": "校本部-C区-1-1-101",
-    "updatedAt": "2026-05-29T09:56:23.509Z"
+    "roomId": "2-4-418",
+    "displayName": "校本部-D区-2-4-418",
+    "updatedAt": "2026-05-29T16:36:59.215Z"
   },
   "history": [
     {
       "timestamp": "2026-05-29T09:45:07.727Z",
       "room_id": "1-1-101",
       "kWh": 348
+    },
+    {
+      "timestamp": "2026-05-29T16:36:59.215Z",
+      "room_id": "2-4-418",
+      "kWh": 123
     }
   ]
 }
