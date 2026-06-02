@@ -16,6 +16,8 @@ function formatInteger(value) {
   return Number.isFinite(numericValue) ? numericValue.toFixed(0) : '-';
 }
 
+const PRICE_PER_KWH = 0.54;
+
 const TIME_RANGES = [
   { label: '7天', days: 7 },
   { label: '14天', days: 14 },
@@ -35,7 +37,7 @@ const Card = ({ children, className }) => (
   </motion.div>
 );
 
-const StatCard = ({ title, value, subtext, icon: Icon, delay, highlight, compact }) => (
+const StatCard = ({ title, value, subtext, icon: Icon, delay, highlight, compact, costText }) => (
   <motion.div 
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
@@ -57,6 +59,11 @@ const StatCard = ({ title, value, subtext, icon: Icon, delay, highlight, compact
     <div className={cn("font-bold truncate", compact ? "text-xl" : "text-2xl", highlight ? "text-blue-700 dark:text-blue-300" : "text-zinc-900 dark:text-zinc-100")}>
       {value}
     </div>
+    {costText && (
+      <div className="text-[11px] mt-0.5 text-amber-600/70 dark:text-amber-400/70 font-medium">
+        {costText}
+      </div>
+    )}
     <div className={cn("truncate", compact ? "text-[10px] mt-0.5" : "text-xs mt-1", highlight ? "text-blue-500/70 dark:text-blue-400/70" : "text-zinc-400")}>
       {subtext}
     </div>
@@ -324,12 +331,20 @@ export default function App() {
         ? differenceInDays(now, new Date(lastRechargeTime)) 
         : '-';
 
+    // 消费金额计算
+    const toCost = (kwh) => (kwh * PRICE_PER_KWH).toFixed(2);
+
     return {
         current: formatInteger(currentKWh),
+        currentCost: toCost(currentKWh),
         consDaily: formatInteger(consumptionDaily),
+        consDailyCost: toCost(consumptionDaily),
         maxDaily: { ...maxDaily, val: formatInteger(maxDaily.val) },
+        maxDailyCost: toCost(maxDaily.val),
         minDaily: { ...minDaily, val: formatInteger(minDaily.val) },
+        minDailyCost: toCost(minDaily.val === 9999 ? 0 : minDaily.val),
         cons30d: formatInteger(cons30d),
+        cons30dCost: toCost(cons30d),
         lastRecharge: {
             date: lastRechargeTime ? format(new Date(lastRechargeTime), 'MM-dd') : '-',
             time: lastRechargeTime ? format(new Date(lastRechargeTime), 'HH:mm') : '',
@@ -418,6 +433,7 @@ export default function App() {
                     <StatCard 
                         title="当前电量" 
                         value={`${stats.current} kWh`} 
+                        costText=costText={`≈ ${stats.currentCost} 元`}
                         subtext="实时剩余" 
                         icon={Zap} 
                         delay={1} 
@@ -426,6 +442,7 @@ export default function App() {
                     <StatCard 
                         title="昨日消耗" 
                         value={`${stats.consDaily} kWh`} 
+                        costText=costText={`≈ ${stats.consDailyCost} 元`}
                         subtext="最近波动" 
                         icon={Activity} 
                         delay={2} 
@@ -433,6 +450,7 @@ export default function App() {
                     <StatCard 
                         title="单日最大消耗" 
                         value={`${stats.maxDaily.val} kWh`} 
+                        costText=costText={`≈ ${stats.maxDailyCost} 元`}
                         subtext={stats.maxDaily.date} 
                         icon={TrendingUp} 
                         delay={3} 
@@ -440,6 +458,7 @@ export default function App() {
                     <StatCard 
                         title="单日最小消耗" 
                         value={`${stats.minDaily.val} kWh`} 
+                        costText=costText={`≈ ${stats.minDailyCost} 元`}
                         subtext={stats.minDaily.date} 
                         icon={TrendingDown} 
                         delay={4} 
