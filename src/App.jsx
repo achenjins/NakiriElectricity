@@ -248,12 +248,12 @@ export default function App() {
         .filter(d => d.val !== null && d.val !== undefined);
   }, [rawData, timeRange, targetRoom]);
 
-  // 2. Calculate Stats
+  // 2. Calculate Stats (based on daily minimum kWh)
   const stats = useMemo(() => {
     if (!rawData.length || !targetRoom) return null;
     
     const roomData = rawData
-        .filter(d => String(d.room_id) === String(targetRoom))
+        .filter(d => String(d.room_id) === String(targetRoom) && d.timestamp && typeof d.kWh === 'number')
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (roomData.length === 0) return null;
@@ -261,73 +261,46 @@ export default function App() {
     const now = new Date();
     const currentKWh = roomData[roomData.length - 1].kWh;
 
-    const getConsumption = (sinceDate) => {
-        const recent = roomData.filter(d => new Date(d.timestamp) >= sinceDate);
-        let sum = 0;
-        for (let i = 1; i < recent.length; i++) {
-            const diff = recent[i-1].kWh - recent[i].kWh;
-            if (diff > 0) sum += diff; 
-        }
-        return sum;
-    };
-
-    const getLatestPointConsumption = (days) => {
-        const latestRecord = roomData[roomData.length - 1];
-        const targetTime = subDays(new Date(latestRecord.timestamp), days);
-
-        for (let i = roomData.length - 2; i >= 0; i--) {
-            const recordTime = new Date(roomData[i].timestamp);
-            if (recordTime <= targetTime) {
-                const diff = roomData[i].kWh - latestRecord.kWh;
-                return diff > 0 ? diff : 0;
-            }
-        }
-
-        return 0;
-    };
-
-    const consumptionDaily = getLatestPointConsumption(1);
-
-    const dailyMap = {};
+    // Build daily minimum map
+    const dailyMinMap = {};
     roomData.forEach(d => {
         const day = format(new Date(d.timestamp), 'yyyy-MM-dd');
-        if (!dailyMap[day]) dailyMap[day] = [];
-        dailyMap[day].push(d.kWh);
+        if (!dailyMinMap[day]) dailyMinMap[day] = Infinity;
+        dailyMinMap[day] = Math.min(dailyMinMap[day], d.kWh);
     });
 
-    const sortedDates = Object.keys(dailyMap).sort();
-    const getDayLastKWh = (date) => {
-        const values = dailyMap[date];
-        return values && values.length > 0 ? values[values.length - 1] : null;
-    };
-    const getNextDayFirstKWh = (date) => {
-        const idx = sortedDates.indexOf(date);
-        return idx >= 0 && idx < sortedDates.length - 1 ? dailyMap[sortedDates[idx + 1]][0] : null;
-    };
+    const sortedDays = Object.keys(dailyMinMap).sort();
 
+    // Daily consumption = prev day min - current day min
+    const dailyConsumptions = [];
+    for (let i = 1; i < sortedDays.length; i++) {
+        const diff = dailyMinMap[sortedDays[i-1]] - dailyMinMap[sortedDays[i]];
+        if (diff > 0) {
+            dailyConsumptions.push({ date: sortedDays[i], consumption: diff });
+        }
+    }
+
+    // 昨日消耗
+    const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
+    const yesterdayEntry = dailyConsumptions.find(d => d.date === yesterday);
+    const consumptionDaily = yesterdayEntry ? yesterdayEntry.consumption : 0;
+
+    // 单日最大/最小消耗
     let maxDaily = { val: 0, date: '-' };
     let minDaily = { val: 9999, date: '-' };
-
-    sortedDates.forEach(date => {
-        const lastKWh = getDayLastKWh(date);
-        const nextFirstKWh = getNextDayFirstKWh(date);
-        if (lastKWh === null || nextFirstKWh === null) return;
-
-        let dailySum = 0;
-        if (lastKWh > nextFirstKWh) {
-            dailySum = lastKWh - nextFirstKWh;
-        }
-
-        if (dailySum > 0.1) {
-            if (dailySum > maxDaily.val) maxDaily = { val: dailySum, date: date.slice(5) };
-            if (dailySum < minDaily.val) minDaily = { val: dailySum, date: date.slice(5) };
-        }
+    dailyConsumptions.forEach(d => {
+        if (d.consumption > maxDaily.val) maxDaily = { val: d.consumption, date: d.date.slice(5) };
+        if (d.consumption < minDaily.val) minDaily = { val: d.consumption, date: d.date.slice(5) };
     });
     if (minDaily.val === 9999) minDaily.val = 0;
 
-    const consumption24h = getConsumption(subDays(now, 1));
-    const consumption7d = getConsumption(subDays(now, 7));
+    // 30天消耗
+    const cutoff30 = format(subDays(now, 30), 'yyyy-MM-dd');
+    const cons30d = dailyConsumptions
+        .filter(d => d.date >= cutoff30)
+        .reduce((sum, d) => sum + d.consumption, 0);
 
+    // 充值检测
     let lastRechargeTime = null;
     let lastRechargeAmount = 0;
     for (let i = roomData.length - 1; i > 0; i--) {
@@ -340,9 +313,12 @@ export default function App() {
         }
     }
 
+    // 预计可用天数
     let daysRemaining = '0';
-    const dailyAvg = consumption7d / 7;
-    if (dailyAvg > 0) daysRemaining = (currentKWh / dailyAvg).toFixed(0);
+    const avgConsumption = dailyConsumptions.length > 0
+        ? dailyConsumptions.reduce((s, d) => s + d.consumption, 0) / dailyConsumptions.length
+        : 0;
+    if (avgConsumption > 0) daysRemaining = (currentKWh / avgConsumption).toFixed(0);
 
     const daysSinceRecharge = lastRechargeTime 
         ? differenceInDays(now, new Date(lastRechargeTime)) 
@@ -351,15 +327,9 @@ export default function App() {
     return {
         current: formatInteger(currentKWh),
         consDaily: formatInteger(consumptionDaily),
-        maxDaily: {
-            ...maxDaily,
-            val: formatInteger(maxDaily.val)
-        },
-        minDaily: {
-            ...minDaily,
-            val: formatInteger(minDaily.val)
-        },
-        cons30d: formatInteger(getConsumption(subDays(now, 30))),
+        maxDaily: { ...maxDaily, val: formatInteger(maxDaily.val) },
+        minDaily: { ...minDaily, val: formatInteger(minDaily.val) },
+        cons30d: formatInteger(cons30d),
         lastRecharge: {
             date: lastRechargeTime ? format(new Date(lastRechargeTime), 'MM-dd') : '-',
             time: lastRechargeTime ? format(new Date(lastRechargeTime), 'HH:mm') : '',
