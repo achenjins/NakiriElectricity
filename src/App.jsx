@@ -503,6 +503,7 @@ export default function App() {
                         title="30天消耗" 
                         value={stats.cons30d} 
                         subtext="kWh" 
+                        costText={`≈ ${stats.cons30dCost} 元`}
                         icon={CalendarDays} 
                         delay={8}
                         compact={true} 
