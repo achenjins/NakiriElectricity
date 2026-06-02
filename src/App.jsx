@@ -433,7 +433,7 @@ export default function App() {
                     <StatCard 
                         title="当前电量" 
                         value={`${stats.current} kWh`} 
-                        costText=costText={`≈ ${stats.currentCost} 元`}
+                        costText={`≈ ${stats.currentCost} 元`}
                         subtext="实时剩余" 
                         icon={Zap} 
                         delay={1} 
@@ -442,7 +442,7 @@ export default function App() {
                     <StatCard 
                         title="昨日消耗" 
                         value={`${stats.consDaily} kWh`} 
-                        costText=costText={`≈ ${stats.consDailyCost} 元`}
+                        costText={`≈ ${stats.consDailyCost} 元`}
                         subtext="最近波动" 
                         icon={Activity} 
                         delay={2} 
@@ -450,7 +450,7 @@ export default function App() {
                     <StatCard 
                         title="单日最大消耗" 
                         value={`${stats.maxDaily.val} kWh`} 
-                        costText=costText={`≈ ${stats.maxDailyCost} 元`}
+                        costText={`≈ ${stats.maxDailyCost} 元`}
                         subtext={stats.maxDaily.date} 
                         icon={TrendingUp} 
                         delay={3} 
@@ -458,7 +458,7 @@ export default function App() {
                     <StatCard 
                         title="单日最小消耗" 
                         value={`${stats.minDaily.val} kWh`} 
-                        costText=costText={`≈ ${stats.minDailyCost} 元`}
+                        costText={`≈ ${stats.minDailyCost} 元`}
                         subtext={stats.minDaily.date} 
                         icon={TrendingDown} 
                         delay={4} 
