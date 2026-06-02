@@ -213,31 +213,37 @@ export default function App() {
       }
     });
     
-    // Group by time and deduplicate
-    const groupedMap = new Map();
+    // Group by day and take minimum kWh per day
+    const dailyMap = new Map();
     filtered.forEach(item => {
       try {
         const dateObj = new Date(item.timestamp);
-        const key = format(dateObj, "yyyy-MM-dd HH:mm");
+        const key = format(dateObj, "yyyy-MM-dd");
         
-        if (!groupedMap.has(key)) {
-          groupedMap.set(key, { 
+        if (!dailyMap.has(key)) {
+          dailyMap.set(key, { 
             timestamp: dateObj.getTime(), 
-            displayTime: format(dateObj, "MM-dd HH:mm"),
+            displayTime: format(dateObj, "MM-dd"),
             fullDate: dateObj,
-            val: null
+            vals: []
           });
         }
         
-        if (String(item.room_id) === String(targetRoom)) {
-          groupedMap.get(key).val = item.kWh;
+        if (String(item.room_id) === String(targetRoom) && typeof item.kWh === 'number') {
+          dailyMap.get(key).vals.push(item.kWh);
         }
       } catch (err) {
         console.warn('Invalid data item:', item, err);
       }
     });
 
-    return Array.from(groupedMap.values())
+    return Array.from(dailyMap.values())
+        .map(d => ({
+          timestamp: d.timestamp,
+          displayTime: d.displayTime,
+          fullDate: d.fullDate,
+          val: d.vals.length > 0 ? Math.min(...d.vals) : null
+        }))
         .sort((a, b) => a.timestamp - b.timestamp)
         .filter(d => d.val !== null && d.val !== undefined);
   }, [rawData, timeRange, targetRoom]);
@@ -588,7 +594,7 @@ export default function App() {
                         allowDataOverflow={false} 
                       />
                       <Tooltip 
-                        labelFormatter={(value) => format(new Date(value), "yyyy-MM-dd HH:mm")}
+                        labelFormatter={(value) => format(new Date(value), "MM-dd")}
                         formatter={(value) => [`${formatInteger(value)} kWh`, '剩余电量']}
                         contentStyle={{ 
                           backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.9)' : 'rgba(255, 255, 255, 0.9)',
