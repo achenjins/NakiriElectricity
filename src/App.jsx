@@ -95,6 +95,142 @@ const ErrorAlert = ({ message, onRetry }) => (
 
 // --- Main App ---
 
+
+// --- Calendar Components ---
+
+const DayCalendar = ({ data, darkMode }) => {
+  // 按年月分组
+  const monthGroups = {};
+  data.forEach(d => {
+    const month = d.fullDate.slice(0, 7); // yyyy-MM
+    if (!monthGroups[month]) monthGroups[month] = [];
+    monthGroups[month].push(d);
+  });
+
+  const months = Object.keys(monthGroups).sort();
+
+  return (
+    <div className="space-y-6">
+      {months.map(month => {
+        const year = month.slice(0, 4);
+        const monthNum = parseInt(month.slice(5, 7));
+        const firstDay = new Date(year, monthNum - 1, 1).getDay(); // 0=Sun
+        const daysInMonth = new Date(year, monthNum, 0).getDate();
+        
+        // 构建日历方格
+        const cells = [];
+        // 空白填充
+        for (let i = 0; i < firstDay; i++) {
+          cells.push({ empty: true });
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = month + '-' + String(day).padStart(2, '0');
+          const dayData = monthGroups[month].find(d => d.date === dateStr.slice(5));
+          cells.push({ empty: false, day, data: dayData });
+        }
+
+        return (
+          <div key={month}>
+            <h3 className="text-lg font-bold mb-3 text-zinc-700 dark:text-zinc-300">{month}</h3>
+            {/* 星期头 */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {['日','一','二','三','四','五','六'].map(w => (
+                <div key={w} className="text-center text-xs text-zinc-400 py-1">{w}</div>
+              ))}
+            </div>
+            {/* 方格 */}
+            <div className="grid grid-cols-7 gap-1">
+              {cells.map((cell, i) => {
+                if (cell.empty) {
+                  return <div key={i} />;
+                }
+                const d = cell.data;
+                const isRecharge = d && d.isRecharge;
+                const diffStr = d ? (isRecharge ? `+${Math.abs(d.diff)}` : `${d.diff}`) : '-';
+                const colorClass = !d ? 'text-zinc-300 dark:text-zinc-700'
+                  : isRecharge ? 'text-red-500 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400';
+                
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
+                      d
+                        ? "bg-white dark:bg-zinc-800/60 border-zinc-100 dark:border-zinc-700"
+                        : "bg-zinc-50 dark:bg-zinc-900/30 border-transparent"
+                    )}
+                  >
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
+                    {d && (
+                      <>
+                        <span className={cn("text-xs font-bold", colorClass)}>{diffStr}</span>
+                        <span className={cn("text-[10px]", colorClass)}>{d.cost.toFixed(1)}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ---
+
+const MonthCalendar = ({ data, darkMode }) => {
+  // 按月份汇总
+  const monthMap = {};
+  data.forEach(d => {
+    const month = d.fullDate.slice(0, 7);
+    if (!monthMap[month]) monthMap[month] = { consume: 0, recharge: 0 };
+    if (d.diff > 0) {
+      monthMap[month].consume += d.diff;
+    } else if (d.diff < -1.0) {
+      monthMap[month].recharge += Math.abs(d.diff);
+    }
+  });
+
+  const months = Object.keys(monthMap).sort();
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {months.map(month => {
+        const m = monthMap[month];
+        return (
+          <div
+            key={month}
+            className="bg-white dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4"
+          >
+            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-3">{month}</div>
+            {/* 消耗 */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400">消耗</span>
+              <div className="text-right">
+                <div className="text-sm font-bold text-green-600 dark:text-green-400">{Math.round(m.consume)}</div>
+                <div className="text-[10px] text-green-500 dark:text-green-400/70">{(m.consume * PRICE_PER_KWH).toFixed(1)}元</div>
+              </div>
+            </div>
+            {/* 充值 */}
+            {m.recharge > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-400">充值</span>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-red-500 dark:text-red-400">+{Math.round(m.recharge)}</div>
+                  <div className="text-[10px] text-red-400/70">{(m.recharge * PRICE_PER_KWH).toFixed(1)}元</div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined' && window.matchMedia) {
@@ -131,6 +267,8 @@ export default function App() {
   const [roomDisplayName, setRoomDisplayName] = useState('Loading...'); 
   const [timeRange, setTimeRange] = useState(7);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [viewMode, setViewMode] = useState('chart'); // 'chart' | 'calendar'
+  const [calendarMode, setCalendarMode] = useState('day'); // 'day' | 'month'
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -341,6 +479,40 @@ export default function App() {
 
   }, [rawData, targetRoom]);
 
+  // 3. Calendar Data — daily consumption & recharge
+  const calendarData = useMemo(() => {
+    if (!rawData.length || !targetRoom) return [];
+    
+    const roomData = rawData
+      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // Get last kWh per day
+    const dailyMap = new Map();
+    roomData.forEach(d => {
+      const key = format(new Date(d.timestamp), 'yyyy-MM-dd');
+      dailyMap.set(key, d.kWh);
+    });
+    
+    const sortedDays = Array.from(dailyMap.keys()).sort();
+    const result = [];
+    for (let i = 1; i < sortedDays.length; i++) {
+      const prevKwh = dailyMap.get(sortedDays[i-1]);
+      const currKwh = dailyMap.get(sortedDays[i]);
+      const diff = Math.round((prevKwh - currKwh) * 100) / 100;
+      const ts = new Date(sortedDays[i]).getTime();
+      result.push({
+        date: sortedDays[i].slice(5), // MM-dd
+        fullDate: sortedDays[i],
+        ts: ts,
+        diff: diff,
+        isRecharge: diff < -1.0,
+        cost: Math.abs(diff) * PRICE_PER_KWH
+      });
+    }
+    return result;
+  }, [rawData, targetRoom]);
+
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans selection:bg-red-500/30 transition-colors duration-300">
       
@@ -526,12 +698,18 @@ export default function App() {
                     </span>
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-zinc-500">
+                  <button
+                    onClick={() => setViewMode(v => v === 'chart' ? 'calendar' : 'chart')}
+                    className="px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-600 dark:text-zinc-400 font-medium mr-1"
+                  >
+                    {viewMode === 'chart' ? '📅 日历' : '📈 趋势'}
+                  </button>
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                   Live
                 </div>
               </div>
 
-              <div className="w-full flex-1 min-h-[500px]">
+                            <div className="w-full flex-1 min-h-[500px]">
                 {loading ? (
                   <div className="h-full w-full flex items-center justify-center text-zinc-400">
                     Loading data...
@@ -541,65 +719,123 @@ export default function App() {
                     暂无数据
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="gradient-room" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#333" : "#eee"} vertical={false} />
-                      <XAxis 
-                        dataKey="timestamp"
-                        type="number"
-                        scale="time"
-                        domain={['dataMin', 'dataMax']}
-                        stroke={darkMode ? "#666" : "#999"} 
-                        fontSize={12} 
-                        tickMargin={10}
-                        minTickGap={40}
-                        tickFormatter={(value) => format(new Date(value), timeRange <= 7 ? "MM-dd HH:mm" : "MM-dd")}
-                      />
-                      <YAxis 
-                        width={45}
-                        stroke={darkMode ? "#666" : "#999"} 
-                        fontSize={12} 
-                        domain={['auto', 'auto']}
-                        tickFormatter={(value) => formatInteger(value)}
-                        allowDataOverflow={false} 
-                      />
-                      <Tooltip 
-                        labelFormatter={(value) => format(new Date(value), timeRange <= 7 ? "MM-dd HH:mm" : "MM-dd")}
-                        formatter={(value) => [`${formatInteger(value)} kWh`, '剩余电量']}
-                        contentStyle={{ 
-                          backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                          borderColor: darkMode ? '#333' : '#eee',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                          backdropFilter: 'blur(8px)'
-                        }}
-                        itemStyle={{ fontSize: '12px', padding: '2px 0' }}
-                        labelStyle={{ color: darkMode ? '#ccc' : '#666', marginBottom: '8px' }}
-                      />
-                       <Area 
-                          type="monotone"
-                          dataKey="val"
-                          name="剩余电量"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          fill="url(#gradient-room)"
-                          connectNulls={true}
-                          isAnimationActive={true}
-                          animationDuration={1500}
-                          activeDot={{ r: 6, strokeWidth: 0 }}
-                       />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <AnimatePresence mode="wait">
+                    {viewMode === 'chart' ? (
+                      <motion.div
+                        key="chart"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.25 }}
+                        className="w-full h-full"
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="gradient-room" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#333" : "#eee"} vertical={false} />
+                            <XAxis 
+                              dataKey="timestamp"
+                              type="number"
+                              scale="time"
+                              domain={['dataMin', 'dataMax']}
+                              stroke={darkMode ? "#666" : "#999"} 
+                              fontSize={12} 
+                              tickMargin={10}
+                              minTickGap={40}
+                              tickFormatter={(value) => format(new Date(value), timeRange <= 7 ? "MM-dd HH:mm" : "MM-dd")}
+                            />
+                            <YAxis 
+                              width={45}
+                              stroke={darkMode ? "#666" : "#999"} 
+                              fontSize={12} 
+                              domain={['auto', 'auto']}
+                              tickFormatter={(value) => formatInteger(value)}
+                              allowDataOverflow={false} 
+                            />
+                            <Tooltip 
+                              labelFormatter={(value) => format(new Date(value), timeRange <= 7 ? "MM-dd HH:mm" : "MM-dd")}
+                              formatter={(value) => [`${formatInteger(value)} kWh`, '剩余电量']}
+                              contentStyle={{ 
+                                backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                borderColor: darkMode ? '#333' : '#eee',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                backdropFilter: 'blur(8px)'
+                              }}
+                              itemStyle={{ fontSize: '12px', padding: '2px 0' }}
+                              labelStyle={{ color: darkMode ? '#ccc' : '#666', marginBottom: '8px' }}
+                            />
+                             <Area 
+                                type="monotone"
+                                dataKey="val"
+                                name="剩余电量"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                fill="url(#gradient-room)"
+                                connectNulls={true}
+                                isAnimationActive={true}
+                                animationDuration={1500}
+                                activeDot={{ r: 6, strokeWidth: 0 }}
+                             />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="calendar"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25 }}
+                        className="w-full h-full overflow-y-auto"
+                      >
+                        {/* 日/月切换 */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <button
+                            onClick={() => setCalendarMode('day')}
+                            className={cn(
+                              "px-3 py-1.5 text-sm font-medium rounded-lg transition-all",
+                              calendarMode === 'day'
+                                ? "bg-blue-500 text-white shadow-sm"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                            )}
+                          >
+                            日
+                          </button>
+                          <button
+                            onClick={() => setCalendarMode('month')}
+                            className={cn(
+                              "px-3 py-1.5 text-sm font-medium rounded-lg transition-all",
+                              calendarMode === 'month'
+                                ? "bg-blue-500 text-white shadow-sm"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                            )}
+                          >
+                            月
+                          </button>
+                        </div>
+
+                        {calendarData.length === 0 ? (
+                          <div className="h-full w-full flex items-center justify-center text-zinc-400">
+                            暂无日历数据
+                          </div>
+                        ) : calendarMode === 'day' ? (
+                          /* -------- 日视图：方格日历 -------- */
+                          <DayCalendar data={calendarData} darkMode={darkMode} />
+                        ) : (
+                          /* -------- 月视图：按月汇总 -------- */
+                          <MonthCalendar data={calendarData} darkMode={darkMode} />
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 )}
               </div>
-            </Card>
-          </div>
         </div>
       </main>
     </div>
