@@ -99,82 +99,65 @@ const ErrorAlert = ({ message, onRetry }) => (
 // --- Calendar Components ---
 
 const DayCalendar = ({ data, darkMode }) => {
-  // 按年月分组
-  const monthGroups = {};
+  const monthSet = [...new Set(data.map(d => d.fullDate.slice(0, 7)))].sort();
+  const [monthIdx, setMonthIdx] = useState(0);
+  const current = monthSet[monthIdx] || '';
+
+  if (!current) return <div className="text-center text-zinc-400 py-8">暂无数据</div>;
+
+  const y = parseInt(current.slice(0, 4));
+  const m = parseInt(current.slice(5, 7));
+  const fd = new Date(y, m - 1, 1).getDay();
+  const dim = new Date(y, m, 0).getDate();
+
+  const dm = {};
   data.forEach(d => {
-    const month = d.fullDate.slice(0, 7); // yyyy-MM
-    if (!monthGroups[month]) monthGroups[month] = [];
-    monthGroups[month].push(d);
+    if (d.fullDate.slice(0, 7) === current) dm[d.fullDate.slice(8)] = d;
   });
 
-  const months = Object.keys(monthGroups).sort();
+  const cells = [];
+  for (let i = 0; i < fd; i++) cells.push({ e: true });
+  for (let d = 1; d <= dim; d++) {
+    cells.push({ e: false, day: d, data: dm[String(d).padStart(2, '0')] });
+  }
 
   return (
-    <div className="space-y-6">
-      {months.map(month => {
-        const year = month.slice(0, 4);
-        const monthNum = parseInt(month.slice(5, 7));
-        const firstDay = new Date(year, monthNum - 1, 1).getDay(); // 0=Sun
-        const daysInMonth = new Date(year, monthNum, 0).getDate();
-        
-        // 构建日历方格
-        const cells = [];
-        // 空白填充
-        for (let i = 0; i < firstDay; i++) {
-          cells.push({ empty: true });
-        }
-        for (let day = 1; day <= daysInMonth; day++) {
-          const dateStr = month + '-' + String(day).padStart(2, '0');
-          const dayData = monthGroups[month].find(d => d.date === dateStr.slice(5));
-          cells.push({ empty: false, day, data: dayData });
-        }
-
-        return (
-          <div key={month}>
-            <h3 className="text-lg font-bold mb-3 text-zinc-700 dark:text-zinc-300">{month}</h3>
-            {/* 星期头 */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {['日','一','二','三','四','五','六'].map(w => (
-                <div key={w} className="text-center text-xs text-zinc-400 py-1">{w}</div>
-              ))}
+    <div>
+      <div className="flex items-center justify-center gap-4 mb-3">
+        <button onClick={() => setMonthIdx(i => Math.max(0, i - 1))} disabled={monthIdx <= 0}
+          className="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30">
+          <ChevronLeft size={20} />
+        </button>
+        <span className="text-base font-bold text-zinc-700 dark:text-zinc-300 min-w-[100px] text-center">{current}</span>
+        <button onClick={() => setMonthIdx(i => Math.min(monthSet.length - 1, i + 1))} disabled={monthIdx >= monthSet.length - 1}
+          className="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30">
+          <ChevronRight size={20} />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['日','一','二','三','四','五','六'].map(w => <div key={w} className="text-center text-xs text-zinc-400 py-1">{w}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((cell, i) => {
+          if (cell.e) return <div key={i} />;
+          const d = cell.data;
+          const has = d && (d.consume > 0 || d.recharge > 0);
+          return (
+            <div key={i} className={cn(
+              "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
+              has ? "bg-white dark:bg-zinc-800/60 border-zinc-100 dark:border-zinc-700"
+              : "bg-zinc-50 dark:bg-zinc-900/30 border-transparent"
+            )}>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
+              {has && (<>
+                {d.consume > 0 && <span className="text-sm font-bold text-green-600 dark:text-green-400 leading-tight">-{d.consume}kWh</span>}
+                {d.recharge > 0 && <span className="text-sm font-bold text-red-500 dark:text-red-400 leading-tight">+{d.recharge}kWh</span>}
+                <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{((d.consume + d.recharge) * PRICE_PER_KWH).toFixed(1)}</span>
+              </>)}
             </div>
-            {/* 方格 */}
-            <div className="grid grid-cols-7 gap-1">
-              {cells.map((cell, i) => {
-                if (cell.empty) {
-                  return <div key={i} />;
-                }
-                const d = cell.data;
-                const isRecharge = d && d.isRecharge;
-                const diffStr = d ? (isRecharge ? `+${Math.abs(d.diff)}` : `${d.diff}`) : '-';
-                const colorClass = !d ? 'text-zinc-300 dark:text-zinc-700'
-                  : isRecharge ? 'text-red-500 dark:text-red-400'
-                  : 'text-green-600 dark:text-green-400';
-                
-                return (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
-                      d
-                        ? "bg-white dark:bg-zinc-800/60 border-zinc-100 dark:border-zinc-700"
-                        : "bg-zinc-50 dark:bg-zinc-900/30 border-transparent"
-                    )}
-                  >
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
-                    {d && (
-                      <>
-                        <span className={cn("text-xs font-bold", colorClass)}>{diffStr}</span>
-                        <span className={cn("text-[10px]", colorClass)}>{d.cost.toFixed(1)}</span>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
