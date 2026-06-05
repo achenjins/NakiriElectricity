@@ -144,7 +144,7 @@ const DayCalendar = ({ data, darkMode }) => {
           const has = d && (d.consume > 0 || d.recharge > 0);
 return (d && d.recharge > 0) ? (
               /* 充值日：蓝色光晕 + hover 翻转 */
-              <div key={i} className="[perspective:600px]">
+              <div key={i} className="[perspective:600px] group">
                 <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
                   {/* 正面 */}
                   <div className={cn(
