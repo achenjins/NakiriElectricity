@@ -229,7 +229,7 @@ const MonthCalendar = ({ data, darkMode }) => {
                 "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors duration-300"
               )}>
                 <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
-                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">+{Math.round(m.recharge)} kWh</div>
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">+{Math.round(m.recharge)} kWh</div>
                 <div className="text-sm font-medium text-amber-500 dark:text-amber-400 mt-1">&yen;{costR}</div>
               </div>
             </div>
