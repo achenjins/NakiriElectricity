@@ -143,23 +143,52 @@ const DayCalendar = ({ data, darkMode }) => {
           const d = cell.data;
           const has = d && (d.consume > 0 || d.recharge > 0);
           return (
-            <div key={i} className={cn(
-              "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all min-h-[72px]",
-              "border-zinc-200 dark:border-zinc-700/50",
-              has ? "bg-white dark:bg-zinc-800/60" : "bg-white dark:bg-zinc-800/40 opacity-60"
-            )}>
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
-              {has ? (<>
-                <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 leading-tight">
-                  {d.consume > 0 ? "-" : "+"}{d.consume > 0 ? d.consume : d.recharge} kWh
-                </span>
-                <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">
-                  &yen;{((d.consume > 0 ? d.consume : d.recharge) * PRICE_PER_KWH).toFixed(1)}
-                </span>
-              </>) : (
-                <span className="text-sm text-zinc-300 dark:text-zinc-600 leading-tight">-</span>
-              )}
-            </div>
+            {d && d.recharge > 0 ? (
+              /* 充值日：蓝色光晕 + hover 翻转 */
+              <div key={i} className="[perspective:600px]">
+                <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
+                  {/* 正面 */}
+                  <div className={cn(
+                    "flex flex-col items-center justify-center p-1.5 rounded-lg border min-h-[72px] [backface-visibility:hidden]",
+                    "shadow-[0_0_12px_rgba(59,130,246,0.4)] dark:shadow-[0_0_16px_rgba(59,130,246,0.3)]",
+                    "border-blue-300 dark:border-blue-600 animate-[pulse_2s_ease-in-out_infinite]",
+                    "bg-white dark:bg-zinc-800/60"
+                  )}>
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
+                    <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 leading-tight">+{d.recharge} kWh</span>
+                    <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
+                  </div>
+                  {/* 背面：大写金额 */}
+                  <div className={cn(
+                    "absolute inset-0 flex flex-col items-center justify-center p-1.5 rounded-lg border min-h-[72px] [backface-visibility:hidden] [transform:rotateY(180deg)]",
+                    "bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600"
+                  )}>
+                    <span className="text-xs font-medium text-blue-500">{cell.day}</span>
+                    <span className="text-base font-bold text-blue-600 dark:text-blue-400">充值</span>
+                    <span className="text-sm font-bold text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* 普通日或仅消耗 */
+              <div key={i} className={cn(
+                "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all min-h-[72px]",
+                "border-zinc-200 dark:border-zinc-700/50",
+                has ? "bg-white dark:bg-zinc-800/60" : "bg-white dark:bg-zinc-800/40 opacity-60"
+              )}>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
+                {has ? (<>
+                  <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 leading-tight">
+                    {d.consume > 0 ? "-" : "+"}{d.consume > 0 ? d.consume : d.recharge} kWh
+                  </span>
+                  <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">
+                    &yen;{((d.consume > 0 ? d.consume : d.recharge) * PRICE_PER_KWH).toFixed(1)}
+                  </span>
+                </>) : (
+                  <span className="text-sm text-zinc-300 dark:text-zinc-600 leading-tight">-</span>
+                )}
+              </div>
+            )}
           );
         })}
       </div>
