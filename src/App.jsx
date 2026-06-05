@@ -165,7 +165,7 @@ return (d && d.recharge > 0) ? (
                   )}>
                     <span className="text-xs font-medium text-blue-500">{cell.day}</span>
                     <span className="text-base font-bold text-blue-600 dark:text-blue-400">+{d.recharge} kWh</span>
-                    <span className="text-sm font-bold text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
+                    <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
                   </div>
                 </div>
               </div>
@@ -228,7 +228,7 @@ const MonthCalendar = ({ data, darkMode }) => {
             )}
             <div className="flex items-center justify-between pt-1.5 border-t border-zinc-100 dark:border-zinc-700/50">
               <span className="text-xs text-zinc-400">消耗费用</span>
-              <span className="text-sm font-bold text-amber-500 dark:text-amber-400">¥{costConsume}</span>
+              <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">¥{costConsume}</span>
             </div>
             {m.recharge > 0 && (
               <div className="flex items-center justify-between">
