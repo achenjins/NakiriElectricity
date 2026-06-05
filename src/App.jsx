@@ -182,48 +182,36 @@ const DayCalendar = ({ data, darkMode }) => {
 // ---
 
 const MonthCalendar = ({ data, darkMode }) => {
-  // 按月份汇总
   const monthMap = {};
   data.forEach(d => {
-    const month = d.fullDate.slice(0, 7);
-    if (!monthMap[month]) monthMap[month] = { consume: 0, recharge: 0 };
-    if (d.diff > 0) {
-      monthMap[month].consume += d.diff;
-    } else if (d.diff < -1.0) {
-      monthMap[month].recharge += Math.abs(d.diff);
-    }
+    const mo = d.fullDate.slice(0, 7);
+    if (!monthMap[mo]) monthMap[mo] = { consume: 0, recharge: 0 };
+    monthMap[mo].consume = Math.round((monthMap[mo].consume + d.consume) * 100) / 100;
+    monthMap[mo].recharge = Math.round((monthMap[mo].recharge + d.recharge) * 100) / 100;
   });
-
-  const months = Object.keys(monthMap).sort();
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {months.map(month => {
-        const m = monthMap[month];
+      {Object.keys(monthMap).sort().map(mo => {
+        const m = monthMap[mo];
+        const total = (m.consume + m.recharge) * PRICE_PER_KWH;
         return (
-          <div
-            key={month}
-            className="bg-white dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4"
-          >
-            <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-3">{month}</div>
-            {/* 消耗 */}
-            <div className="flex items-center justify-between mb-2">
+          <div key={mo} className="bg-white dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4">
+            <div className="text-base font-bold text-zinc-700 dark:text-zinc-300 mb-3">{mo}</div>
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs text-zinc-400">消耗</span>
-              <div className="text-right">
-                <div className="text-sm font-bold text-green-600 dark:text-green-400">{Math.round(m.consume)}</div>
-                <div className="text-[10px] text-green-500 dark:text-green-400/70">{(m.consume * PRICE_PER_KWH).toFixed(1)}元</div>
-              </div>
+              <span className="text-base font-bold text-green-600 dark:text-green-400">{Math.round(m.consume)}kWh</span>
             </div>
-            {/* 充值 */}
             {m.recharge > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs text-zinc-400">充值</span>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-red-500 dark:text-red-400">+{Math.round(m.recharge)}</div>
-                  <div className="text-[10px] text-red-400/70">{(m.recharge * PRICE_PER_KWH).toFixed(1)}元</div>
-                </div>
+                <span className="text-base font-bold text-red-500 dark:text-red-400">+{Math.round(m.recharge)}kWh</span>
               </div>
             )}
+            <div className="flex items-center justify-between pt-1.5 border-t border-zinc-100 dark:border-zinc-700/50">
+              <span className="text-xs text-zinc-400">合计</span>
+              <span className="text-sm font-bold text-amber-500 dark:text-amber-400">¥{total.toFixed(1)}</span>
+            </div>
           </div>
         );
       })}
