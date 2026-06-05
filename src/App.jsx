@@ -203,7 +203,7 @@ export default function App() {
       return () => clearInterval(interval);
   }, [fetchData]);
 
-  // 1. Prepare Chart Data with better performance
+  // 1. Prepare Chart Data — keep all varied points, skip duplicates (kWh change < 0.01)
   const chartData = useMemo(() => {
     if (!rawData.length || !targetRoom) return [];
 
@@ -220,7 +220,7 @@ export default function App() {
       }
     });
     
-    // Group by day and take minimum kWh per day
+    // Group by day, keep all valid points with timestamp
     const dailyMap = new Map();
     filtered.forEach(item => {
       try {
@@ -228,31 +228,37 @@ export default function App() {
         const key = format(dateObj, "yyyy-MM-dd");
         
         if (!dailyMap.has(key)) {
-          dailyMap.set(key, { 
-            timestamp: dateObj.getTime(), 
-            displayTime: format(dateObj, "MM-dd"),
-            fullDate: dateObj,
-            vals: []
-          });
+          dailyMap.set(key, []);
         }
         
         if (String(item.room_id) === String(targetRoom) && typeof item.kWh === 'number') {
-          dailyMap.get(key).vals.push(item.kWh);
+          dailyMap.get(key).push({ ts: dateObj.getTime(), kWh: item.kWh });
         }
       } catch (err) {
         console.warn('Invalid data item:', item, err);
       }
     });
 
-    return Array.from(dailyMap.values())
-        .map(d => ({
-          timestamp: d.timestamp,
-          displayTime: d.displayTime,
-          fullDate: d.fullDate,
-          val: d.vals.length > 0 ? Math.min(...d.vals) : null
-        }))
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .filter(d => d.val !== null && d.val !== undefined);
+    // Sort each day by time, dedup adjacent near-identical values, output flat array
+    const result = [];
+    Array.from(dailyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([_, points]) => {
+        points.sort((a, b) => a.ts - b.ts);
+        
+        let lastKwh = null;
+        points.forEach(p => {
+          if (lastKwh === null || Math.abs(p.kWh - lastKwh) >= 0.01) {
+            result.push({
+              timestamp: p.ts,
+              val: p.kWh
+            });
+            lastKwh = p.kWh;
+          }
+        });
+      });
+
+    return result;
   }, [rawData, timeRange, targetRoom]);
 
   // 2. Calculate Stats (based on daily minimum kWh)
@@ -584,7 +590,7 @@ export default function App() {
                         allowDataOverflow={false} 
                       />
                       <Tooltip 
-                        labelFormatter={(value) => format(new Date(value), "MM-dd")}
+                        labelFormatter={(value) => format(new Date(value), timeRange <= 7 ? "MM-dd HH:mm" : "MM-dd")}
                         formatter={(value) => [`${formatInteger(value)} kWh`, '剩余电量']}
                         contentStyle={{ 
                           backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.9)' : 'rgba(255, 255, 255, 0.9)',
