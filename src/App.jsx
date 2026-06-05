@@ -188,7 +188,7 @@ return (d && d.recharge > 0) ? (
                   <span className="text-sm text-zinc-300 dark:text-zinc-600 leading-tight">-</span>
                 )}
               </div>
-            )}
+            )
           );
         })}
       </div>
