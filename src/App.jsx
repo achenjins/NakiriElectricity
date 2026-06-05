@@ -214,11 +214,11 @@ const MonthCalendar = ({ data, darkMode }) => {
         const costC = (m.consume * PRICE_PER_KWH).toFixed(1);
         const costR = (m.recharge * PRICE_PER_KWH).toFixed(1);
         return (
-          <div key={mo} className="[perspective:600px] group cursor-pointer hover:[box-shadow:0_0_16px_rgba(59,130,246,0.5)] transition-shadow duration-500">
+          <div key={mo} className="[perspective:600px] group cursor-pointer">
             <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
               <div className={cn(
                 "flex flex-col items-center justify-center p-4 rounded-xl border min-h-[120px] [backface-visibility:hidden]",
-                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
+                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors duration-300"
               )}>
                 <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
                 <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">-{Math.round(m.consume)} kWh</div>
@@ -226,7 +226,7 @@ const MonthCalendar = ({ data, darkMode }) => {
               </div>
               <div className={cn(
                 "absolute inset-0 flex flex-col items-center justify-center p-4 rounded-xl border min-h-[120px] [backface-visibility:hidden] [transform:rotateY(180deg)]",
-                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
+                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors duration-300"
               )}>
                 <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
                 <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">+{Math.round(m.recharge)} kWh</div>
