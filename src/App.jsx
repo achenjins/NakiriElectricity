@@ -155,8 +155,9 @@ const DayCalendar = ({ data, darkMode }) => {
                     "bg-white dark:bg-zinc-800/60"
                   )}>
                     <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
-                    <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 leading-tight">+{d.recharge} kWh</span>
-                    <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
+                    {d.consume > 0 && <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 leading-tight">-{d.consume} kWh</span>}
+                    {d.consume > 0 && <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.consume * PRICE_PER_KWH).toFixed(1)}</span>}
+                    {d.consume <= 0 && <span className="text-sm text-zinc-400 leading-tight">-</span>}
                   </div>
                   {/* 背面：大写金额 */}
                   <div className={cn(
@@ -164,7 +165,7 @@ const DayCalendar = ({ data, darkMode }) => {
                     "bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600"
                   )}>
                     <span className="text-xs font-medium text-blue-500">{cell.day}</span>
-                    <span className="text-base font-bold text-blue-600 dark:text-blue-400">充值</span>
+                    <span className="text-base font-bold text-blue-600 dark:text-blue-400">充值 {d.recharge} kWh</span>
                     <span className="text-sm font-bold text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
                   </div>
                 </div>
