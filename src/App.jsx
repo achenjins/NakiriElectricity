@@ -194,7 +194,8 @@ const MonthCalendar = ({ data, darkMode }) => {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {Object.keys(monthMap).sort().map(mo => {
         const m = monthMap[mo];
-        const total = (m.consume + m.recharge) * PRICE_PER_KWH;
+        const costConsume = (m.consume * PRICE_PER_KWH).toFixed(1);
+        const costRecharge = (m.recharge * PRICE_PER_KWH).toFixed(1);
         return (
           <div key={mo} className="bg-white dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4">
             <div className="text-base font-bold text-zinc-700 dark:text-zinc-300 mb-3">{mo}</div>
@@ -209,9 +210,15 @@ const MonthCalendar = ({ data, darkMode }) => {
               </div>
             )}
             <div className="flex items-center justify-between pt-1.5 border-t border-zinc-100 dark:border-zinc-700/50">
-              <span className="text-xs text-zinc-400">合计</span>
-              <span className="text-sm font-bold text-amber-500 dark:text-amber-400">¥{total.toFixed(1)}</span>
+              <span className="text-xs text-zinc-400">消耗费用</span>
+              <span className="text-sm font-bold text-amber-500 dark:text-amber-400">¥{costConsume}</span>
             </div>
+            {m.recharge > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-400">充值费用</span>
+                <span className="text-xs font-medium text-amber-500 dark:text-amber-400">¥{costRecharge}</span>
+              </div>
+            )}
           </div>
         );
       })}
