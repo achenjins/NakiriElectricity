@@ -145,7 +145,7 @@ const DayCalendar = ({ data, darkMode }) => {
 return (d && d.recharge > 0) ? (
               /* 充值日：蓝色光晕 + hover 翻转 */
               <div key={i} className="[perspective:600px] group">
-                <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
+                <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500 group-hover:[filter:drop-shadow(0_0_12px_rgba(59,130,246,0.5))]">
                   {/* 正面 */}
                   <div className={cn(
                     "flex flex-col items-center justify-center p-1.5 rounded-lg border min-h-[80px] [backface-visibility:hidden]",
@@ -215,14 +215,13 @@ const MonthCalendar = ({ data, darkMode }) => {
         const costR = (m.recharge * PRICE_PER_KWH).toFixed(1);
         return (
           <div key={mo} className="[perspective:600px] group cursor-pointer">
-            <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
+            <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500 group-hover:[filter:drop-shadow(0_0_12px_rgba(59,130,246,0.5))]">
               <div className={cn(
                 "flex flex-col items-center justify-center p-4 rounded-xl border min-h-[120px] [backface-visibility:hidden]",
                 "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
               )}>
                 <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
-                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">{Math.round(m.consume)}</div>
-                <div className="text-lg font-bold text-zinc-800 dark:text-zinc-200">kWh</div>
+                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">-{Math.round(m.consume)} kWh</div>
                 <div className="text-sm font-medium text-amber-500 dark:text-amber-400 mt-1">&yen;{costC}</div>
               </div>
               <div className={cn(
@@ -230,8 +229,7 @@ const MonthCalendar = ({ data, darkMode }) => {
                 "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
               )}>
                 <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
-                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">{Math.round(m.recharge)}</div>
-                <div className="text-lg font-bold text-zinc-800 dark:text-zinc-200">kWh</div>
+                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">+{Math.round(m.recharge)} kWh</div>
                 <div className="text-sm font-medium text-amber-500 dark:text-amber-400 mt-1">&yen;{costR}</div>
               </div>
             </div>
