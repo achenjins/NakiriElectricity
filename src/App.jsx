@@ -211,31 +211,30 @@ const MonthCalendar = ({ data, darkMode }) => {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {Object.keys(monthMap).sort().map(mo => {
         const m = monthMap[mo];
-        const costConsume = (m.consume * PRICE_PER_KWH).toFixed(1);
-        const costRecharge = (m.recharge * PRICE_PER_KWH).toFixed(1);
+        const costC = (m.consume * PRICE_PER_KWH).toFixed(1);
+        const costR = (m.recharge * PRICE_PER_KWH).toFixed(1);
         return (
-          <div key={mo} className="bg-white dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4">
-            <div className="text-base font-bold text-zinc-700 dark:text-zinc-300 mb-3">{mo}</div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-zinc-400">消耗</span>
-              <span className="text-base font-bold text-green-600 dark:text-green-400">{Math.round(m.consume)}kWh</span>
-            </div>
-            {m.recharge > 0 && (
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-zinc-400">充值</span>
-                <span className="text-base font-bold text-red-500 dark:text-red-400">+{Math.round(m.recharge)}kWh</span>
+          <div key={mo} className="[perspective:600px] group cursor-pointer">
+            <div className="relative w-full [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] transition-transform duration-500">
+              <div className={cn(
+                "flex flex-col items-center justify-center p-4 rounded-xl border min-h-[120px] [backface-visibility:hidden]",
+                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
+              )}>
+                <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
+                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">{Math.round(m.consume)}</div>
+                <div className="text-lg font-bold text-zinc-800 dark:text-zinc-200">kWh</div>
+                <div className="text-sm font-medium text-amber-500 dark:text-amber-400 mt-1">&yen;{costC}</div>
               </div>
-            )}
-            <div className="flex items-center justify-between pt-1.5 border-t border-zinc-100 dark:border-zinc-700/50">
-              <span className="text-xs text-zinc-400">消耗费用</span>
-              <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">¥{costConsume}</span>
-            </div>
-            {m.recharge > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">充值费用</span>
-                <span className="text-xs font-medium text-amber-500 dark:text-amber-400">¥{costRecharge}</span>
+              <div className={cn(
+                "absolute inset-0 flex flex-col items-center justify-center p-4 rounded-xl border min-h-[120px] [backface-visibility:hidden] [transform:rotateY(180deg)]",
+                "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/50"
+              )}>
+                <div className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-2">{mo}</div>
+                <div className="text-3xl font-bold text-zinc-800 dark:text-zinc-200">{Math.round(m.recharge)}</div>
+                <div className="text-lg font-bold text-zinc-800 dark:text-zinc-200">kWh</div>
+                <div className="text-sm font-medium text-amber-500 dark:text-amber-400 mt-1">&yen;{costR}</div>
               </div>
-            )}
+            </div>
           </div>
         );
       })}
