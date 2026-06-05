@@ -560,7 +560,10 @@ export default function App() {
         <AnimatePresence>
           {error && <ErrorAlert message={error} onRetry={() => fetchData(true)} />}
         </AnimatePresence>
-
+                )}
+              </div>
+            </Card>
+          </div>
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 md:gap-8">
           
           {/* Left Column */}
