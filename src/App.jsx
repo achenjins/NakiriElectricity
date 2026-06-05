@@ -146,14 +146,25 @@ const DayCalendar = ({ data, darkMode }) => {
             <div key={i} className={cn(
               "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
               has ? "bg-white dark:bg-zinc-800/60 border-zinc-100 dark:border-zinc-700"
-              : "bg-zinc-50 dark:bg-zinc-900/30 border-transparent"
+              : "bg-white dark:bg-zinc-800/60 border-zinc-100/30 dark:border-zinc-700/30 opacity-50"
             )}>
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{cell.day}</span>
-              {has && (<>
-                {d.consume > 0 && <span className="text-sm font-bold text-green-600 dark:text-green-400 leading-tight">-{d.consume}kWh</span>}
-                {d.recharge > 0 && <span className="text-sm font-bold text-red-500 dark:text-red-400 leading-tight">+{d.recharge}kWh</span>}
-                <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">&yen;{((d.consume + d.recharge) * PRICE_PER_KWH).toFixed(1)}</span>
-              </>)}
+              {has ? (<>
+                {d.consume > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-base font-bold text-green-600 dark:text-green-400 leading-tight">-{d.consume}kWh</span>
+                    <span className="text-[10px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.consume * PRICE_PER_KWH).toFixed(1)}</span>
+                  </div>
+                )}
+                {d.recharge > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-base font-bold text-red-500 dark:text-red-400 leading-tight">+{d.recharge}kWh</span>
+                    <span className="text-[10px] font-medium text-amber-500 dark:text-amber-400">&yen;{(d.recharge * PRICE_PER_KWH).toFixed(1)}</span>
+                  </div>
+                )}
+              </>) : (
+                <span className="text-xs text-zinc-300 dark:text-zinc-600 leading-tight">-</span>
+              )}
             </div>
           );
         })}
