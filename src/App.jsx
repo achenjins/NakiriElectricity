@@ -203,60 +203,38 @@ export default function App() {
       return () => clearInterval(interval);
   }, [fetchData]);
 
-  // 1. Prepare Chart Data — keep all varied points, skip duplicates (kWh change < 0.01)
+  // 1. Prepare Chart Data — globally dedup: keep only when kWh changes
   const chartData = useMemo(() => {
     if (!rawData.length || !targetRoom) return [];
 
     const now = new Date();
     const cutoff = subDays(now, timeRange);
     
-    // Filter data within range
-    const filtered = rawData.filter(d => {
-      try {
-        const timestamp = new Date(d.timestamp);
-        return timestamp > cutoff && !isNaN(timestamp.getTime());
-      } catch {
-        return false;
-      }
-    });
-    
-    // Group by day, keep all valid points with timestamp
-    const dailyMap = new Map();
-    filtered.forEach(item => {
-      try {
-        const dateObj = new Date(item.timestamp);
-        const key = format(dateObj, "yyyy-MM-dd");
-        
-        if (!dailyMap.has(key)) {
-          dailyMap.set(key, []);
+    // Filter + sort globally by time
+    const sorted = rawData
+      .filter(d => {
+        try {
+          const ts = new Date(d.timestamp);
+          return ts > cutoff && !isNaN(ts.getTime());
+        } catch {
+          return false;
         }
-        
-        if (String(item.room_id) === String(targetRoom) && typeof item.kWh === 'number') {
-          dailyMap.get(key).push({ ts: dateObj.getTime(), kWh: item.kWh });
-        }
-      } catch (err) {
-        console.warn('Invalid data item:', item, err);
-      }
-    });
+      })
+      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // Sort each day by time, dedup adjacent near-identical values, output flat array
+    // Global dedup: skip adjacent identical values (change < 0.01)
     const result = [];
-    Array.from(dailyMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([_, points]) => {
-        points.sort((a, b) => a.ts - b.ts);
-        
-        let lastKwh = null;
-        points.forEach(p => {
-          if (lastKwh === null || Math.abs(p.kWh - lastKwh) >= 0.01) {
-            result.push({
-              timestamp: p.ts,
-              val: p.kWh
-            });
-            lastKwh = p.kWh;
-          }
+    let lastKwh = null;
+    sorted.forEach(item => {
+      if (lastKwh === null || Math.abs(item.kWh - lastKwh) >= 0.01) {
+        result.push({
+          timestamp: new Date(item.timestamp).getTime(),
+          val: item.kWh
         });
-      });
+        lastKwh = item.kWh;
+      }
+    });
 
     return result;
   }, [rawData, timeRange, targetRoom]);
