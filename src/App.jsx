@@ -189,7 +189,7 @@ return (d && d.recharge > 0) ? (
                 )}
               </div>
             )
-          );
+          ;
         })}
       </div>
     </div>
