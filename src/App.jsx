@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format, subDays, differenceInDays } from 'date-fns';
-import { Moon, Sun, Zap, Activity, RefreshCw, TrendingDown, TrendingUp, BatteryCharging, CalendarClock, CalendarDays, Home, CloudLightning, AlertCircle } from 'lucide-react';
+import { Moon, Sun, Zap, Activity, RefreshCw, TrendingDown, TrendingUp, BatteryCharging, CalendarClock, CalendarDays, Home, CloudLightning, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -479,7 +479,7 @@ export default function App() {
 
   }, [rawData, targetRoom]);
 
-  // 3. Calendar Data — daily consumption & recharge
+  // 3. Calendar Data — from adjacent deduped points, detect recharge same-day
   const calendarData = useMemo(() => {
     if (!rawData.length || !targetRoom) return [];
     
@@ -487,30 +487,34 @@ export default function App() {
       .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     
-    // Get last kWh per day
-    const dailyMap = new Map();
+    const deduped = [];
+    let lastKwh = null;
     roomData.forEach(d => {
-      const key = format(new Date(d.timestamp), 'yyyy-MM-dd');
-      dailyMap.set(key, d.kWh);
+      if (lastKwh === null || Math.abs(d.kWh - lastKwh) >= 0.01) {
+        deduped.push(d);
+        lastKwh = d.kWh;
+      }
     });
     
-    const sortedDays = Array.from(dailyMap.keys()).sort();
-    const result = [];
-    for (let i = 1; i < sortedDays.length; i++) {
-      const prevKwh = dailyMap.get(sortedDays[i-1]);
-      const currKwh = dailyMap.get(sortedDays[i]);
-      const diff = Math.round((prevKwh - currKwh) * 100) / 100;
-      const ts = new Date(sortedDays[i]).getTime();
-      result.push({
-        date: sortedDays[i].slice(5), // MM-dd
-        fullDate: sortedDays[i],
-        ts: ts,
-        diff: diff,
-        isRecharge: diff < -1.0,
-        cost: Math.abs(diff) * PRICE_PER_KWH
-      });
+    const dailyMap = {};
+    for (let i = 1; i < deduped.length; i++) {
+      const prevKwh = deduped[i-1].kWh;
+      const curr = deduped[i];
+      const diff = Math.round((prevKwh - curr.kWh) * 100) / 100;
+      const day = format(new Date(curr.timestamp), 'yyyy-MM-dd');
+      
+      if (!dailyMap[day]) {
+        dailyMap[day] = { fullDate: day, consume: 0, recharge: 0, ts: new Date(day).getTime() };
+      }
+      
+      if (diff > 0) {
+        dailyMap[day].consume = Math.round((dailyMap[day].consume + diff) * 100) / 100;
+      } else if (diff < -1.0) {
+        dailyMap[day].recharge = Math.round((dailyMap[day].recharge + Math.abs(diff)) * 100) / 100;
+      }
     }
-    return result;
+    
+    return Object.values(dailyMap).sort((a, b) => a.ts - b.ts);
   }, [rawData, targetRoom]);
 
   return (
