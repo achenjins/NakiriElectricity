@@ -333,6 +333,7 @@ export default function App() {
             date: lastRechargeTime ? format(new Date(lastRechargeTime), 'MM-dd') : '-',
             time: lastRechargeTime ? format(new Date(lastRechargeTime), 'HH:mm') : '',
             amount: lastRechargeAmount > 0 ? formatInteger(lastRechargeAmount) : '-',
+            cost: lastRechargeAmount > 0 ? toCost(lastRechargeAmount) : '-',
             daysAgo: daysSinceRecharge
         },
         estimateDays: daysRemaining
@@ -494,8 +495,9 @@ export default function App() {
                     />
                     <StatCard 
                         title="上次充值" 
-                        value={stats.lastRecharge.date} 
-                        subtext={stats.lastRecharge.time}
+                        value={stats.lastRecharge.amount !== '-' ? `+${stats.lastRecharge.amount}` : '-'} 
+                        subtext={`${stats.lastRecharge.date} ${stats.lastRecharge.time}`}
+                        costText={stats.lastRecharge.cost !== '-' ? `约${stats.lastRecharge.cost}元` : undefined}
                         icon={BatteryCharging} 
                         delay={6}
                         compact={true}
