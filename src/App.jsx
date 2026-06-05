@@ -839,8 +839,9 @@ export default function App() {
                   </AnimatePresence>
                 )}
               </div>
-        </div>
-      </main>
+            </Card>
+          </div>
+        </main>
     </div>
   );
 }
