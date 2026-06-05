@@ -837,7 +837,8 @@ export default function App() {
               </div>
             </Card>
           </div>
-        </main>
+        </div>
+      </main>
     </div>
   );
 }
