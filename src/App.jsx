@@ -454,10 +454,16 @@ const stats = useMemo(() => {
         }
     }
 
-    // 昨日消耗 — 直接从 calendarData 取值
+    // 昨日消耗 — 从 rawData 直接计算（前天最后值 - 昨天最后值）
     const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
-    const yesterdayCal = calendarData.find(d => d.fullDate === yesterday);
-    const consumptionDaily = yesterdayCal ? yesterdayCal.consume : 0;
+    const dayBefore = format(subDays(now, 2), 'yyyy-MM-dd');
+    const yesterdayLast = [...roomData].reverse().find(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === yesterday);
+    const dayBeforeLast = [...roomData].reverse().find(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === dayBefore);
+    let consumptionDaily = 0;
+    if (yesterdayLast && dayBeforeLast) {
+        const diff = dayBeforeLast.kWh - yesterdayLast.kWh;
+        if (diff > 0) consumptionDaily = diff;
+    }
 
     // 单日最大/最小消耗
     let maxDaily = { val: 0, date: '-' };
