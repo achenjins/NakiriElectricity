@@ -452,8 +452,6 @@ const stats = useMemo(() => {
         if (consumption > 0) {
             dailyConsumptions.push({ date: day, consumption: Math.round(consumption * 100) / 100 });
         }
-    };
-        }
     }
 
     // 昨日消耗 — 直接从 calendarData 取值
