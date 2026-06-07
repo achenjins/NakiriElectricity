@@ -437,10 +437,10 @@ export default function App() {
         }
     }
 
-    // 昨日消耗
+    // 昨日消耗 — 直接从 calendarData 取值
     const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
-    const yesterdayEntry = dailyConsumptions.find(d => d.date === yesterday);
-    const consumptionDaily = yesterdayEntry ? yesterdayEntry.consumption : 0;
+    const yesterdayCal = calendarData.find(d => d.fullDate === yesterday);
+    const consumptionDaily = yesterdayCal ? yesterdayCal.consume : 0;
 
     // 单日最大/最小消耗
     let maxDaily = { val: 0, date: '-' };
