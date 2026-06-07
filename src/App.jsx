@@ -387,7 +387,26 @@ export default function App() {
   }, [rawData, timeRange, targetRoom]);
 
   // 2. Calculate Stats (based on daily minimum kWh)
-  const stats = useMemo(() => {
+  
+  // 2. Calendar Data — from adjacent deduped points, detect recharge same-day
+const calendarData = useMemo(() => {
+    if (!rawData.length || !targetRoom) return [];
+    
+    const roomData = rawData
+      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    const deduped = [];
+    let lastKwh = null;
+    roomData.forEach(d => {
+      if (lastKwh === null || Math.abs(d.kWh - lastKwh) >= 0.01) {
+        deduped.push(d);
+        lastKwh = d.kWh;
+      }
+    });
+    
+    const dailyMap = {};
+const stats = useMemo(() => {
     if (!rawData.length || !targetRoom) return null;
     
     const roomData = rawData
@@ -508,23 +527,7 @@ export default function App() {
   }, [rawData, targetRoom]);
 
   // 3. Calendar Data — from adjacent deduped points, detect recharge same-day
-  const calendarData = useMemo(() => {
-    if (!rawData.length || !targetRoom) return [];
-    
-    const roomData = rawData
-      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    
-    const deduped = [];
-    let lastKwh = null;
-    roomData.forEach(d => {
-      if (lastKwh === null || Math.abs(d.kWh - lastKwh) >= 0.01) {
-        deduped.push(d);
-        lastKwh = d.kWh;
-      }
-    });
-    
-    const dailyMap = {};
+  
     for (let i = 1; i < deduped.length; i++) {
       const prevKwh = deduped[i-1].kWh;
       const curr = deduped[i];
