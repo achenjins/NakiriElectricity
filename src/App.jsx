@@ -399,22 +399,41 @@ export default function App() {
     const now = new Date();
     const currentKWh = roomData[roomData.length - 1].kWh;
 
-    // Build daily minimum map
-    const dailyMinMap = {};
-    roomData.forEach(d => {
+    // Build daily data with first/last/min/max and detect recharge days
+    const dailyData = {};
+    roomData
+        .filter(d => d.timestamp && typeof d.kWh === 'number')
+        .forEach(d => {
         const day = format(new Date(d.timestamp), 'yyyy-MM-dd');
-        if (!dailyMinMap[day]) dailyMinMap[day] = Infinity;
-        dailyMinMap[day] = Math.min(dailyMinMap[day], d.kWh);
+        if (!dailyData[day]) dailyData[day] = { first: d.kWh, last: d.kWh, min: d.kWh, max: d.kWh, pts: [] };
+        dailyData[day].last = d.kWh;
+        dailyData[day].min = Math.min(dailyData[day].min, d.kWh);
+        dailyData[day].max = Math.max(dailyData[day].max, d.kWh);
+        dailyData[day].pts.push(d.kWh);
     });
 
-    const sortedDays = Object.keys(dailyMinMap).sort();
+    const rechargeDays = new Set();
+    Object.entries(dailyData).forEach(([day, d]) => {
+      for (let i = 1; i < d.pts.length; i++) {
+        if (d.pts[i] - d.pts[i-1] > 1.0) { rechargeDays.add(day); break; }
+      }
+    });
 
-    // Daily consumption = prev day min - current day min
+    const sortedDays = Object.keys(dailyData).sort();
+
     const dailyConsumptions = [];
-    for (let i = 1; i < sortedDays.length; i++) {
-        const diff = dailyMinMap[sortedDays[i-1]] - dailyMinMap[sortedDays[i]];
-        if (diff > 0) {
-            dailyConsumptions.push({ date: sortedDays[i], consumption: diff });
+    for (let i = 0; i < sortedDays.length; i++) {
+        const day = sortedDays[i];
+        let consumption = 0;
+        if (rechargeDays.has(day)) {
+            consumption = dailyData[day].max - dailyData[day].min;
+        } else if (i > 0) {
+            consumption = dailyData[sortedDays[i-1]].last - dailyData[day].last;
+        }
+        if (consumption > 0) {
+            dailyConsumptions.push({ date: day, consumption: Math.round(consumption * 100) / 100 });
+        }
+    };
         }
     }
 
