@@ -387,26 +387,7 @@ export default function App() {
   }, [rawData, timeRange, targetRoom]);
 
   // 2. Calculate Stats (based on daily minimum kWh)
-  
-  // 2. Calendar Data — from adjacent deduped points, detect recharge same-day
-const calendarData = useMemo(() => {
-    if (!rawData.length || !targetRoom) return [];
-    
-    const roomData = rawData
-      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    
-    const deduped = [];
-    let lastKwh = null;
-    roomData.forEach(d => {
-      if (lastKwh === null || Math.abs(d.kWh - lastKwh) >= 0.01) {
-        deduped.push(d);
-        lastKwh = d.kWh;
-      }
-    });
-    
-    const dailyMap = {};
-const stats = useMemo(() => {
+  const stats = useMemo(() => {
     if (!rawData.length || !targetRoom) return null;
     
     const roomData = rawData
@@ -418,52 +399,29 @@ const stats = useMemo(() => {
     const now = new Date();
     const currentKWh = roomData[roomData.length - 1].kWh;
 
-    // Build daily data with first/last/min/max and detect recharge days
-    const dailyData = {};
-    roomData
-        .filter(d => d.timestamp && typeof d.kWh === 'number')
-        .forEach(d => {
+    // Build daily minimum map
+    const dailyMinMap = {};
+    roomData.forEach(d => {
         const day = format(new Date(d.timestamp), 'yyyy-MM-dd');
-        if (!dailyData[day]) dailyData[day] = { first: d.kWh, last: d.kWh, min: d.kWh, max: d.kWh, pts: [] };
-        dailyData[day].last = d.kWh;
-        dailyData[day].min = Math.min(dailyData[day].min, d.kWh);
-        dailyData[day].max = Math.max(dailyData[day].max, d.kWh);
-        dailyData[day].pts.push(d.kWh);
+        if (!dailyMinMap[day]) dailyMinMap[day] = Infinity;
+        dailyMinMap[day] = Math.min(dailyMinMap[day], d.kWh);
     });
 
-    const rechargeDays = new Set();
-    Object.entries(dailyData).forEach(([day, d]) => {
-      for (let i = 1; i < d.pts.length; i++) {
-        if (d.pts[i] - d.pts[i-1] > 1.0) { rechargeDays.add(day); break; }
-      }
-    });
+    const sortedDays = Object.keys(dailyMinMap).sort();
 
-    const sortedDays = Object.keys(dailyData).sort();
-
+    // Daily consumption = prev day min - current day min
     const dailyConsumptions = [];
-    for (let i = 0; i < sortedDays.length; i++) {
-        const day = sortedDays[i];
-        let consumption = 0;
-        if (rechargeDays.has(day)) {
-            consumption = dailyData[day].max - dailyData[day].min;
-        } else if (i > 0) {
-            consumption = dailyData[sortedDays[i-1]].last - dailyData[day].last;
-        }
-        if (consumption > 0) {
-            dailyConsumptions.push({ date: day, consumption: Math.round(consumption * 100) / 100 });
+    for (let i = 1; i < sortedDays.length; i++) {
+        const diff = dailyMinMap[sortedDays[i-1]] - dailyMinMap[sortedDays[i]];
+        if (diff > 0) {
+            dailyConsumptions.push({ date: sortedDays[i], consumption: diff });
         }
     }
 
-    // 昨日消耗 — 从 rawData 直接计算（前天最后值 - 昨天最后值）
+    // 昨日消耗
     const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
-    const dayBefore = format(subDays(now, 2), 'yyyy-MM-dd');
-    const yesterdayLast = [...roomData].reverse().find(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === yesterday);
-    const dayBeforeLast = [...roomData].reverse().find(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === dayBefore);
-    let consumptionDaily = 0;
-    if (yesterdayLast && dayBeforeLast) {
-        const diff = dayBeforeLast.kWh - yesterdayLast.kWh;
-        if (diff > 0) consumptionDaily = diff;
-    }
+    const yesterdayEntry = dailyConsumptions.find(d => d.date === yesterday);
+    const consumptionDaily = yesterdayEntry ? yesterdayEntry.consumption : 0;
 
     // 单日最大/最小消耗
     let maxDaily = { val: 0, date: '-' };
@@ -531,7 +489,23 @@ const stats = useMemo(() => {
   }, [rawData, targetRoom]);
 
   // 3. Calendar Data — from adjacent deduped points, detect recharge same-day
-  
+  const calendarData = useMemo(() => {
+    if (!rawData.length || !targetRoom) return [];
+    
+    const roomData = rawData
+      .filter(d => String(d.room_id) === String(targetRoom) && typeof d.kWh === 'number')
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    const deduped = [];
+    let lastKwh = null;
+    roomData.forEach(d => {
+      if (lastKwh === null || Math.abs(d.kWh - lastKwh) >= 0.01) {
+        deduped.push(d);
+        lastKwh = d.kWh;
+      }
+    });
+    
+    const dailyMap = {};
     for (let i = 1; i < deduped.length; i++) {
       const prevKwh = deduped[i-1].kWh;
       const curr = deduped[i];
